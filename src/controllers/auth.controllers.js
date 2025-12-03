@@ -1,5 +1,6 @@
 const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
 const registerController = async (req, res) => {
@@ -18,9 +19,10 @@ const registerController = async (req, res) => {
     });
   }
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
-      username: username,
-      password: password,
+      username: username.toLowerCase(),
+      password: hashedPassword,
     });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -58,7 +60,8 @@ const loginController = async (req, res) => {
         message: "User not found",
       });
     }
-    if (user.password !== password) {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({
         message: "Invalid Password",
       });
@@ -81,7 +84,7 @@ const loginController = async (req, res) => {
 };
 
 const userController = async (req, res) => {
-  const token  = req.cookies.token;
+  const token = req.cookies.token;
   if (!token) {
     return res.status(401).json({
       message: "Unauthorized",
@@ -93,7 +96,7 @@ const userController = async (req, res) => {
       _id: decoded.id,
     });
     if (!user) {
-      return res.status(400).json({
+      return res.status(404).json({
         message: "User not found",
       });
     }
