@@ -17,6 +17,9 @@ const generateCaption = async (file) => {
         },
       },
     ],
+    config: {
+      systemInstruction: "You are an expert for generating image captions.",
+    },
   });
   return response.text;
 };
